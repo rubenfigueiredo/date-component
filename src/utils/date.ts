@@ -1,56 +1,58 @@
 
 type HandleFn = (
-    keyboardValue: number,
-    monthValue?: number
-) => { value: number; moveToNextSection: boolean }
+    keyboardValue: string,
+    monthValue?: string
+) => { value: string; moveToNextSection: boolean }
 
 export const handleMonth: HandleFn = (
-    keyboardValue: number,
-    monthValue?: number
+    keyboardValue: string,
+    monthValue?: string
 ) => {
     let moveToNextSection: boolean = false;
     //if its an entry value
     if (monthValue == null) {
-        if (keyboardValue !== 1) {
+        console.log("keyboardValue", keyboardValue);
+
+        if (parseInt(keyboardValue) > 1) {
             moveToNextSection = true;
         }
-        return { value: --keyboardValue, moveToNextSection };
+
+        return { value: keyboardValue, moveToNextSection };
         //if its not an entry value
     } else {
         //because the month in js starts with 0
-        monthValue++;
         moveToNextSection = true;
-        let newMonthValue: number;
-        let tempIntSubValue: number = addDigitToDateSection(
+        let newMonthValue: string;
+        let tempIntSubValue: string = addDigitToDateSection(
             monthValue,
             keyboardValue
         );
-        if (tempIntSubValue <= 12) {
+        if (parseInt(tempIntSubValue) <= 12) {
             newMonthValue = tempIntSubValue;
         } else {
             newMonthValue = keyboardValue;
         }
-        return { value: --newMonthValue, moveToNextSection };
+        return { value: newMonthValue, moveToNextSection };
     }
 };
 
-export const handleDay: HandleFn = (keyboardValue: number, monthValue?: number): { value: number; moveToNextSection: boolean } => {
+export const handleDay: HandleFn = (keyboardValue: string, monthValue?: string): { value: string; moveToNextSection: boolean } => {
     //if its an entry value in the section
     let moveToNextSection: boolean = false;
     if (monthValue == null) {
-        if (keyboardValue > 3) {
+        if (parseInt(keyboardValue) > 3) {
             moveToNextSection = true;
         }
         return { value: keyboardValue, moveToNextSection };
     } else {
         //if its not an entry value in the section
         moveToNextSection = true;
-        let newDayValue: number;
-        let tempIntSubValue: number = addDigitToDateSection(
+        let newDayValue: string;
+        let tempIntSubValue: string = addDigitToDateSection(
             monthValue,
             keyboardValue
         );
-        if (tempIntSubValue <= 31) {
+        if (parseInt(tempIntSubValue) <= 31) {
             newDayValue = tempIntSubValue;
         } else {
             newDayValue = keyboardValue
@@ -59,20 +61,20 @@ export const handleDay: HandleFn = (keyboardValue: number, monthValue?: number):
     }
 }
 
-export const handleYear: HandleFn = (keyboardValue: number, yearValue?: number): { value: number; moveToNextSection: boolean } => {
+export const handleYear: HandleFn = (keyboardValue: string, yearValue?: string): { value: string; moveToNextSection: boolean } => {
     let moveToNextSection: boolean = false;
     //if its an entry value in the section
     if (yearValue == null) {
         return { value: keyboardValue, moveToNextSection };
     } else {
         //if its not an entry value in the section
-        if (getNumberLength(yearValue) === 3) {
+        if (yearValue.length === 3) {
             moveToNextSection = true;
-            let newYearValue: number = addDigitToDateSection(yearValue, keyboardValue);
+            let newYearValue: string = addDigitToDateSection(yearValue, keyboardValue);
             return { value: newYearValue, moveToNextSection };
-        } else if (getNumberLength(yearValue) < 3) {
+        } else if (yearValue.length < 3) {
             moveToNextSection = false;
-            let newYearValue: number = addDigitToDateSection(yearValue, keyboardValue);
+            let newYearValue: string = addDigitToDateSection(yearValue, keyboardValue);
             return { value: newYearValue, moveToNextSection };
         }
         else {
@@ -82,22 +84,22 @@ export const handleYear: HandleFn = (keyboardValue: number, yearValue?: number):
     }
 }
 
-export const handleHour: HandleFn = (keyboardValue: number, hourValue?: number) => {
+export const handleHour: HandleFn = (keyboardValue: string, hourValue?: string) => {
     let moveToNextSection = false;
     if (hourValue == null) {
-        if (keyboardValue > 2) {
+        if (parseInt(keyboardValue) > 2) {
             moveToNextSection = true;
         }
         return { value: keyboardValue, moveToNextSection };
     } else {
         //if its not an entry value in the section
         moveToNextSection = true;
-        let newHourValue: number;
-        let tempIntSubValue: number = addDigitToDateSection(
+        let newHourValue: string;
+        let tempIntSubValue: string = addDigitToDateSection(
             hourValue,
             keyboardValue
         );
-        if (tempIntSubValue <= 23) {
+        if (parseInt(tempIntSubValue) <= 23) {
             newHourValue = tempIntSubValue;
         } else {
             newHourValue = keyboardValue
@@ -106,49 +108,56 @@ export const handleHour: HandleFn = (keyboardValue: number, hourValue?: number) 
     }
 }
 
-export const handleMinutes: HandleFn = (keyboardValue: number, minuteValue?: number) => {
+export const handleMinutes: HandleFn = (keyboardValue: string, minuteValue?: string) => {
     let moveToNextSection = false;
     if (minuteValue == null) {
-        if (keyboardValue > 5) {
+        if (parseInt(keyboardValue) > 5) {
             moveToNextSection = true;
         }
         return { value: keyboardValue, moveToNextSection };
     } else {
         //if its not an entry value in the section
+        console.log("minuteValue", minuteValue);
+
         moveToNextSection = true;
-        let newMinuteValue: number;
-        let tempIntSubValue: number = addDigitToDateSection(
+        let tempIntSubValue: string = addDigitToDateSection(
             minuteValue,
             keyboardValue
         );
+        console.log("tempIntSubValue", tempIntSubValue);
+
         return { value: tempIntSubValue, moveToNextSection };
     }
 }
 
 const addDigitToDateSection = (
-    dateSectionValue: number,
-    keyboardValue: number
-): number => {
+    dateSectionValue: string,
+    keyboardValue: string
+): string => {
     let newStringSubValue: string =
         dateSectionValue.toString() + keyboardValue.toString();
-    return parseInt(newStringSubValue);
+    return newStringSubValue;
 };
 
 const getNumberLength = (number: number) => number.toString().length;
-export const setDateSection = (date: string, newSubDateValue: number, startingPosition: number, endingPosition: number, section: string) => {
+export const setDateSection = (date: string, newSubDateValue: string, startingPosition: number, endingPosition: number, section: string, char: string) => {
     let firstSubStringPart = date.substring(0, startingPosition);
     let lastSubstringPart = date.substring(endingPosition, date.length);
+    //edit section
     let substring = date.substring(startingPosition, endingPosition);
     let intFromSubString = substring.match(/\d+/g);
     let newSubDateValueString = newSubDateValue.toString();
-    let numberOfExtraFields = section.length - getNumberLength(newSubDateValue);
+    let numberOfExtraFields = section.length - newSubDateValue.length;
+
     for (let index = 0; index < numberOfExtraFields; index++) {
-        newSubDateValueString = newSubDateValueString + "-";
+        newSubDateValueString = newSubDateValueString + char;
     }
-    let newInputValueSubString =
-        intFromSubString != null
-            ? substring.replace(intFromSubString[0], newSubDateValueString)
-            : undefined;
+
+    let newInputValueSubString = "";
+    if (intFromSubString != null) {
+        let tempString: string = substring.split(char).join('');
+        newInputValueSubString = tempString.replace(intFromSubString[0], newSubDateValueString);
+    }
     let newInputValue =
         newInputValueSubString != null
             ? firstSubStringPart + newInputValueSubString + lastSubstringPart

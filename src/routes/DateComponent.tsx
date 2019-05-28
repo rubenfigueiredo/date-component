@@ -15,7 +15,8 @@ import {
   getMonth,
   getYear,
   getHours,
-  getMinutes
+  getMinutes,
+  parse
 } from "date-fns";
 import { handleFn, setDateSection, getNumberFromString } from "../utils/date";
 import { log } from "util";
@@ -29,6 +30,7 @@ interface DateInputProps
   pattern: string;
   onChange(date: Date): void;
   value: Date;
+  placeholderChar: string;
 }
 
 interface DateInputState {
@@ -36,7 +38,7 @@ interface DateInputState {
   posByName: TPosByName;
   nameByPos: string[];
   currentSection: string;
-  currentSectionString: string;
+  currentSectionString?: string;
   lastSection: string;
   inputValue: string | undefined;
   value: Date;
@@ -71,7 +73,8 @@ const getFn: { [k: string]: (date: number | Date) => number } = {
 class DateInput extends React.Component<DateInputProps, DateInputState> {
   static defaultProps = {
     //pattern: "MM/dd/yyyy"
-    pattern: "yyyy/MM/dd HH:mm"
+    pattern: "yyyy-MM-dd HH:mm",
+    placeholderChar: "_"
   };
 
   static getDerivedStateFromProps(
@@ -136,19 +139,21 @@ class DateInput extends React.Component<DateInputProps, DateInputState> {
   setInputValue = (
     section: string,
     inputValue: string | undefined,
-    newSubDateValue: number
+    newSubDateValue: string
   ) => {
     if (inputValue == null) {
       return undefined;
     }
     const last = this.state.nameByPos.indexOf(section);
     const pos = this.state.posByName[this.state.nameByPos[last]];
+
     const newInputValue = setDateSection(
       inputValue,
       newSubDateValue,
       pos[0],
       pos[1],
-      section
+      section,
+      this.props.placeholderChar
     );
     return newInputValue;
   };
@@ -157,7 +162,7 @@ class DateInput extends React.Component<DateInputProps, DateInputState> {
     const last = this.state.nameByPos.indexOf(section);
     const pos = this.state.posByName[this.state.nameByPos[last]];
     const dateSection = getNumberFromString(inputValue, pos[0], pos[1]);
-    return dateSection != null ? parseInt(dateSection) : undefined;
+    return dateSection != null ? dateSection : undefined;
   };
 
   stayInSection = (event: any, selectionStart: any, selectionEnd: any) => {
@@ -208,24 +213,62 @@ class DateInput extends React.Component<DateInputProps, DateInputState> {
       this.setState({ currentSection: "" });
       // move selection to prev section
       this.movePreviousSection(e, section);
+      //if its a number
     } else if (!isNaN(+e.key)) {
-      let dateSubValue: number = getFn[section](this.props.value);
-      console.log(
-        "this.getDateSection(section,this.state.inputValue)",
-        this.getDateSection(section, this.state.inputValue)
+      let dateSubValue: string | undefined = this.getDateSection(
+        section,
+        this.state.inputValue
       );
 
-      let newSubValue: number = parseInt(e.key);
-      if (this.state.currentSection !== section) {
-        this.setState({ currentSection: section });
-        if (section && upFn[section]) {
-          const subDate = handleFn[section](newSubValue);
+      if (dateSubValue != null) {
+        let newSubValue: string = e.key;
+        //if the user enters the section
+        if (this.state.currentSection !== section) {
+          this.setState({ currentSection: section });
+          if (section && upFn[section]) {
+            const subDate = handleFn[section](newSubValue);
+            if (subDate.moveToNextSection === true) {
+              let subDateInt: number = parseInt(subDate.value);
+              section === "MM" && --subDateInt;
+              console.log("subDateInt", subDateInt);
+
+              this.props.onChange(setFn[section](this.props.value, subDateInt));
+              if (this.state.lastSection === section) {
+                //skip out the input
+                this.moveOutInput(e);
+              } else {
+                // move selection to next section
+                this.moveNextSection(e, section);
+              }
+              //stay in the same place
+            } else {
+              this.setState(() => {
+                return {
+                  inputValue: this.setInputValue(
+                    section,
+                    this.state.inputValue,
+                    subDate.value
+                  )
+                };
+              });
+              this.stayInSection(e, selectionStart, selectionEnd);
+            }
+          }
+          //if the user was already in the section
+        } else {
+          const subDate = handleFn[section](newSubValue, dateSubValue);
           if (subDate.moveToNextSection === true) {
-            this.props.onChange(
-              setFn[section](this.props.value, subDate.value)
+            let subDateInt: number = parseInt(subDate.value);
+            section === "MM" && --subDateInt;
+            console.log("subDateInt", subDateInt);
+            console.log(
+              "setFn[section](this.props.value, subDateInt)",
+              setFn[section](this.props.value, subDateInt)
             );
+
+            this.props.onChange(setFn[section](this.props.value, subDateInt));
+            //skip out the input
             if (this.state.lastSection === section) {
-              //skip out the input
               this.moveOutInput(e);
             } else {
               // move selection to next section
@@ -245,23 +288,26 @@ class DateInput extends React.Component<DateInputProps, DateInputState> {
             this.stayInSection(e, selectionStart, selectionEnd);
           }
         }
-      } else {
-        const subDate = handleFn[section](newSubValue, dateSubValue);
-        if (subDate.moveToNextSection === true) {
-          this.props.onChange(setFn[section](this.props.value, subDate.value));
-          //skip out the input
-          if (this.state.lastSection === section) {
-            this.moveOutInput(e);
-          } else {
-            // move selection to next section
-            this.moveNextSection(e, section);
-          }
-          //stay in the same place
-        } else {
-          this.stayInSection(e, selectionStart, selectionEnd);
-        }
       }
     }
+  };
+
+  checkIfDateIsValid = (date: string, format: string) => {
+    let parsedDate = parse(date, format, new Date());
+    return !isNaN(parsedDate.getTime());
+  };
+
+  handleOnBlur: React.ChangeEventHandler<HTMLInputElement> = e => {
+    this.checkIfDateIsValid(e.currentTarget.value, this.state.pattern) ===
+      false &&
+      this.setState(
+        (state: DateInputState, props: Readonly<DateInputProps>) => {
+          return {
+            inputValue: format(props.value, this.state.pattern),
+            currentSection: ""
+          };
+        }
+      );
   };
 
   handleChange: React.ChangeEventHandler<HTMLInputElement> = e => {
@@ -269,14 +315,14 @@ class DateInput extends React.Component<DateInputProps, DateInputState> {
   };
 
   render() {
-    const { pattern, value } = this.props;
-    console.log("this.state", this.state);
+    console.log("this.state.inputValue", this.state.inputValue);
+
     return (
       <input
         onSelect={this.handleSelect}
         onKeyDown={this.handleKeyDown}
         onChange={this.handleChange}
-        //onBlur
+        onBlur={this.handleOnBlur}
         value={this.state.inputValue}
       />
     );
@@ -284,7 +330,8 @@ class DateInput extends React.Component<DateInputProps, DateInputState> {
 }
 
 export default function App() {
-  const [date, setDate] = React.useState(new Date());
+  const [date, setDate] = React.useState();
+
   return (
     <div className="App">
       <DateInput value={date} onChange={setDate} />
