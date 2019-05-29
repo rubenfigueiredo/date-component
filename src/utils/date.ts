@@ -1,3 +1,4 @@
+import { log } from "util";
 
 type HandleFn = (
     keyboardValue: string,
@@ -138,29 +139,51 @@ const addDigitToDateSection = (
         dateSectionValue.toString() + keyboardValue.toString();
     return newStringSubValue;
 };
+const replaceNumberInString = (string: string, number: string) => {
+    let indexNumber = 0;
+    for (let index = 0; index < string.length; index++) {
+        const element = string[index];
+        if (!isNaN(+element)) {
+            let indexNumber = index;
+            break;
+        }
+    }
+    let firstSubStringPart = string.substring(0, indexNumber);
+    let lastSubstringPart = string.substring(number.length, string.length);
+    let newString = firstSubStringPart + number + lastSubstringPart;
 
-const getNumberLength = (number: number) => number.toString().length;
+    return newString;
+}
+const replaceNumberInDate = (string: string, number: string, firstPosition: number, lastPosition: number) => {
+    let firstSubStringPart = string.substring(0, firstPosition);
+    let lastSubstringPart = string.substring(lastPosition - 1, string.length);
+    console.log("firstSubStringPart", firstSubStringPart);
+    console.log("lastSubstringPart", lastSubstringPart);
+    let newString = firstSubStringPart + number + lastSubstringPart;
+    return newString;
+}
 export const setDateSection = (date: string, newSubDateValue: string, startingPosition: number, endingPosition: number, section: string, char: string) => {
     let firstSubStringPart = date.substring(0, startingPosition);
     let lastSubstringPart = date.substring(endingPosition, date.length);
     //edit section
     let substring = date.substring(startingPosition, endingPosition);
     let intFromSubString = substring.match(/\d+/g);
-    let newSubDateValueString = newSubDateValue.toString();
     let numberOfExtraFields = section.length - newSubDateValue.length;
 
     for (let index = 0; index < numberOfExtraFields; index++) {
-        newSubDateValueString = newSubDateValueString + char;
+        newSubDateValue = newSubDateValue + char;
     }
 
-    let newInputValueSubString = "";
+    //replaceNumberInString2(date, newSubDateValue, startingPosition, endingPosition);
+
+    let newInputValueSubString: string | null = "";
     if (intFromSubString != null) {
-        let tempString: string = substring.split(char).join('');
-        newInputValueSubString = tempString.replace(intFromSubString[0], newSubDateValueString);
+        newInputValueSubString = replaceNumberInDate(date, newSubDateValue, startingPosition, endingPosition)//replaceNumberInString(substring, newSubDateValue);
+        console.log("newInputValueSubString", newInputValueSubString);
     }
     let newInputValue =
         newInputValueSubString != null
-            ? firstSubStringPart + newInputValueSubString + lastSubstringPart
+            ? newInputValueSubString//firstSubStringPart + newInputValueSubString + lastSubstringPart
             : undefined;
     return newInputValue;
 }
