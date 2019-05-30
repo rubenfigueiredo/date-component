@@ -19,7 +19,13 @@ import {
   isValid,
   parse
 } from "date-fns";
-import { handleFn, setDateSection, getNumberFromString } from "../utils/date";
+import {
+  handleFn,
+  setDateSection,
+  getNumberFromString,
+  focusNext
+} from "../utils/date";
+import { log } from "util";
 
 //import { Omit } from "./utils";
 type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
@@ -122,40 +128,22 @@ export class DateInput extends React.Component<DateInputProps, DateInputState> {
   }
 
   state = {} as DateInputState;
-
-  handleSelect: React.ReactEventHandler<HTMLInputElement> = e => {
-    const { selectionStart, selectionEnd } = e.currentTarget;
-
-    if (selectionStart != null && selectionStart === selectionEnd) {
-      // Select section on click
-      const pos = this.state.posByName[this.state.nameByPos[selectionStart]];
-      e.currentTarget.setSelectionRange(pos[0], pos[1] - 1);
-    }
-  };
-
-  moveNextSection = (event: any, section: string) => {
-    event.persist();
-    return requestAnimationFrame(() => {
-      const last = this.state.nameByPos.lastIndexOf(section);
-      if (last < event.target.value.length) {
-        const pos = this.state.posByName[this.state.nameByPos[last + 1]];
-        event.target.setSelectionRange(pos[0], pos[1] - 1);
-      }
-    });
-  };
+  private mouseDownEvent: boolean = false;
 
   setInputValue = (
     section: string,
     inputValue: string | undefined,
     newSubDateValue: string
-  ) => {
+  ): string | undefined => {
     if (inputValue == null) {
       return undefined;
     }
-    const last = this.state.nameByPos.indexOf(section);
-    const pos = this.state.posByName[this.state.nameByPos[last]];
+    const last: number = this.state.nameByPos.indexOf(section);
+    const pos: [number, number] = this.state.posByName[
+      this.state.nameByPos[last]
+    ];
 
-    const newInputValue = setDateSection(
+    const newInputValue: string | undefined = setDateSection(
       inputValue,
       newSubDateValue,
       pos[0],
@@ -166,45 +154,72 @@ export class DateInput extends React.Component<DateInputProps, DateInputState> {
     return newInputValue;
   };
 
-  getDateSection = (section: string, inputValue: string | undefined) => {
-    const last = this.state.nameByPos.indexOf(section);
-    const pos = this.state.posByName[this.state.nameByPos[last]];
-    const dateSection = getNumberFromString(inputValue, pos[0], pos[1]);
+  getDateSection = (
+    section: string,
+    inputValue: string | undefined
+  ): string | undefined => {
+    const last: number = this.state.nameByPos.indexOf(section);
+    const pos: [number, number] = this.state.posByName[
+      this.state.nameByPos[last]
+    ];
+    const dateSection: string | undefined = getNumberFromString(
+      inputValue,
+      pos[0],
+      pos[1]
+    );
     return dateSection != null ? dateSection : undefined;
   };
 
-  stayInSection = (event: any, selectionStart: any, selectionEnd: any) => {
-    event.persist();
-    return requestAnimationFrame(() =>
-      event.target.setSelectionRange(selectionStart, selectionEnd)
-    );
-  };
-
-  focusNext = (el: Element) => {
-    const all = document.body.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    if (all.length) {
-      const i =
-        Array.prototype.findIndex.call(all, (t: Element) => t === el) + 1;
-      console.log("all[i < all.length ? i : 0]", all[i < all.length ? i : 0]);
-
-      const element = all[i < all.length ? i : 0] as HTMLElement;
-      element.focus();
+  handleSelect: React.ReactEventHandler<HTMLInputElement> = e => {
+    const { selectionStart, selectionEnd } = e.currentTarget;
+    if (selectionStart != null && selectionStart === selectionEnd) {
+      // Select section on click
+      const pos: [number, number] = this.state.posByName[
+        this.state.nameByPos[selectionStart]
+      ];
+      e.currentTarget.setSelectionRange(pos[0], pos[1] - 1);
     }
   };
 
-  moveOutInput = (event: any) => {
-    this.focusNext(event.target);
+  moveOutInput = (target: EventTarget & HTMLInputElement) => {
+    focusNext(target);
   };
 
-  movePreviousSection = (event: any, section: string) => {
-    const first = this.state.nameByPos.indexOf(section);
+  movePreviousSection = (
+    target: EventTarget & HTMLInputElement,
+    section: string
+  ) => {
+    const first: number = this.state.nameByPos.indexOf(section);
     if (first > 0) {
-      const pos = this.state.posByName[this.state.nameByPos[first - 1]];
-      event.target.setSelectionRange(pos[0], pos[1] - 1);
+      const pos: [number, number] = this.state.posByName[
+        this.state.nameByPos[first - 1]
+      ];
+      target.setSelectionRange(pos[0], pos[1] - 1);
     }
   };
+
+  moveNextSection = (
+    target: EventTarget & HTMLInputElement,
+    section: string
+  ) => {
+    const { value } = target;
+    return requestAnimationFrame(() => {
+      const last = this.state.nameByPos.lastIndexOf(section);
+      if (last < value.length) {
+        const pos = this.state.posByName[this.state.nameByPos[last + 1]];
+        target.setSelectionRange(pos[0], pos[1] - 1);
+      }
+    });
+  };
+
+  stayInSection = (
+    target: EventTarget & HTMLInputElement,
+    selectionStart: number,
+    selectionEnd: number
+  ) =>
+    requestAnimationFrame(() =>
+      target.setSelectionRange(selectionStart, selectionEnd)
+    );
 
   handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = e => {
     const target = e.currentTarget;
@@ -220,7 +235,7 @@ export class DateInput extends React.Component<DateInputProps, DateInputState> {
       target.blur();
     }
 
-    const section = nameByPos[selectionStart];
+    const section: string = nameByPos[selectionStart];
 
     if (e.keyCode === 38 || e.keyCode === 40) {
       this.setState({ currentSection: "" });
@@ -229,16 +244,16 @@ export class DateInput extends React.Component<DateInputProps, DateInputState> {
         this.props.onChange(
           upFn[section](this.props.value, e.keyCode === 38 ? 1 : -1)
         );
-        this.stayInSection(e, selectionStart, selectionEnd);
+        this.stayInSection(target, selectionStart, selectionEnd);
       }
     } else if (e.keyCode === 39) {
       this.setState({ currentSection: "" });
       // move selection to next section
-      this.moveNextSection(e, section);
+      this.moveNextSection(target, section);
     } else if (e.keyCode === 37) {
       this.setState({ currentSection: "" });
       // move selection to prev section
-      this.movePreviousSection(e, section);
+      this.movePreviousSection(target, section);
       //if its a number
     } else if (!isNaN(+e.key)) {
       let dateSubValue: string | undefined = this.getDateSection(
@@ -253,29 +268,28 @@ export class DateInput extends React.Component<DateInputProps, DateInputState> {
           this.setState({ currentSection: section });
           if (section && upFn[section]) {
             const subDate = handleFn[section](newSubValue);
+            //skip to next section
             if (subDate.moveToNextSection === true) {
               let subDateInt: number = parseInt(subDate.value);
-              section === "MM" && --subDateInt;
+              //change the state and format the date
               this.props.onChange(setFn[section](this.props.value, subDateInt));
               if (this.state.lastSection === section) {
                 //skip out the input
-                this.moveOutInput(e);
+                this.moveOutInput(target);
               } else {
                 // move selection to next section
-                this.moveNextSection(e, section);
+                this.moveNextSection(target, section);
               }
               //stay in the same place
             } else {
-              this.setState(() => {
-                return {
-                  inputValue: this.setInputValue(
-                    section,
-                    this.state.inputValue,
-                    subDate.value
-                  )
-                };
-              });
-              this.stayInSection(e, selectionStart, selectionEnd);
+              this.setState(state => ({
+                inputValue: this.setInputValue(
+                  section,
+                  state.inputValue,
+                  subDate.value
+                )
+              }));
+              this.stayInSection(target, selectionStart, selectionEnd);
             }
           }
           //if the user was already in the section
@@ -283,27 +297,24 @@ export class DateInput extends React.Component<DateInputProps, DateInputState> {
           const subDate = handleFn[section](newSubValue, dateSubValue);
           if (subDate.moveToNextSection === true) {
             let subDateInt: number = parseInt(subDate.value);
-            section === "MM" && --subDateInt;
             this.props.onChange(setFn[section](this.props.value, subDateInt));
             //skip out the input
             if (this.state.lastSection === section) {
-              this.moveOutInput(e);
+              this.moveOutInput(target);
             } else {
               // move selection to next section
-              this.moveNextSection(e, section);
+              this.moveNextSection(target, section);
             }
             //stay in the same place
           } else {
-            this.setState(() => {
-              return {
-                inputValue: this.setInputValue(
-                  section,
-                  this.state.inputValue,
-                  subDate.value
-                )
-              };
-            });
-            this.stayInSection(e, selectionStart, selectionEnd);
+            this.setState(state => ({
+              inputValue: this.setInputValue(
+                section,
+                state.inputValue,
+                subDate.value
+              )
+            }));
+            this.stayInSection(target, selectionStart, selectionEnd);
           }
         }
       }
@@ -311,22 +322,22 @@ export class DateInput extends React.Component<DateInputProps, DateInputState> {
   };
 
   handleOnBlur: React.ChangeEventHandler<HTMLInputElement> = e => {
-    let value = this.props.value ? this.props.value : new Date();
-    !isValid(parse(e.currentTarget.value, this.props.pattern, new Date())) &&
+    this.mouseDownEvent = false;
+
+    if (
+      !isValid(parse(e.currentTarget.value, this.props.pattern, new Date()))
+    ) {
       this.setState({
-        inputValue: format(value /*this.props.value*/, this.props.pattern),
+        inputValue: format(this.props.value || new Date(), this.props.pattern),
         currentSection: ""
       });
-  };
-
-  handleChange: React.ChangeEventHandler<HTMLInputElement> = e => {
-    console.log(e.currentTarget.value);
+    }
   };
 
   handleOnFocus: React.FocusEventHandler<HTMLInputElement> = e => {
-    !this.props.value && this.props.onChange(new Date());
+    if (!this.props.value) this.props.onChange(new Date());
     const target = e.target;
-    if (e.relatedTarget)
+    if (e.relatedTarget && !this.mouseDownEvent)
       requestAnimationFrame(() =>
         target.setSelectionRange(
           0,
@@ -335,17 +346,21 @@ export class DateInput extends React.Component<DateInputProps, DateInputState> {
       );
   };
 
+  handleMouseDown: React.MouseEventHandler = () => (this.mouseDownEvent = true);
+
   render() {
-    console.log("this.state.inputValue", this.state.inputValue);
     return (
       <input
         onSelect={this.handleSelect}
         onKeyDown={this.handleKeyDown}
-        onChange={this.handleChange}
+        onChange={noop}
         onBlur={this.handleOnBlur}
         value={this.state.inputValue}
         onFocus={this.handleOnFocus}
+        onMouseDown={this.handleMouseDown}
       />
     );
   }
 }
+
+function noop() {}
