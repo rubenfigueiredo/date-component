@@ -20,7 +20,7 @@ export const setInputMonth: SetInputDate = (
     } else {
         //because the month in js starts with 0
         let newMonthValue: string;
-        let tempIntSubValue: string = addDigitToDateSection(
+        let tempIntSubValue: string = concatenateStrings(
             monthValue,
             keyboardValue
         );
@@ -50,7 +50,7 @@ export const setInputDay: SetInputDate = (keyboardValue: string, monthValue?: st
     } else {
         //if its not an entry value in the section
         let newDayValue: string;
-        let tempIntSubValue: string = addDigitToDateSection(
+        let tempIntSubValue: string = concatenateStrings(
             monthValue,
             keyboardValue
         );
@@ -71,9 +71,9 @@ export const setInputYear: SetInputDate = (keyboardValue: string, yearValue?: st
     } else {
         //if its not an entry value in the section
         if (yearValue.length === 3) {
-            return { value: addDigitToDateSection(yearValue, keyboardValue), moveToNextSection: true };
+            return { value: concatenateStrings(yearValue, keyboardValue), moveToNextSection: true };
         } else if (yearValue.length < 3) {
-            return { value: addDigitToDateSection(yearValue, keyboardValue), moveToNextSection: false };
+            return { value: concatenateStrings(yearValue, keyboardValue), moveToNextSection: false };
         }
         else {
             return { value: keyboardValue, moveToNextSection: true };
@@ -91,7 +91,7 @@ export const setInputHour: SetInputDate = (keyboardValue: string, hourValue?: st
     } else {
         //if its not an entry value in the section
         let newHourValue: string;
-        let tempIntSubValue: string = addDigitToDateSection(
+        let tempIntSubValue: string = concatenateStrings(
             hourValue,
             keyboardValue
         );
@@ -113,7 +113,7 @@ export const setInputMinutes: SetInputDate = (keyboardValue: string, minuteValue
         return { value: keyboardValue, moveToNextSection };
     } else {
         let newMinuteValue: string;
-        let tempIntSubValue: string = addDigitToDateSection(
+        let tempIntSubValue: string = concatenateStrings(
             minuteValue,
             keyboardValue
         );
@@ -126,7 +126,7 @@ export const setInputMinutes: SetInputDate = (keyboardValue: string, minuteValue
     }
 }
 //adds a number from keyboard to the existing date
-export const addDigitToDateSection = (
+export const concatenateStrings = (
     dateSectionValue: string,
     keyboardValue: string
 ): string => {
@@ -135,7 +135,7 @@ export const addDigitToDateSection = (
     return newStringSubValue;
 };
 
-const replaceNumberInDate = (string: string, number: string, firstPosition: number, lastPosition: number) =>
+export const replaceNumberInDate = (string: string, number: string, firstPosition: number, lastPosition: number) =>
     string.substring(0, firstPosition) + number + string.substring(lastPosition - 1, string.length);
 
 export const setDateSection = (date: string, newSubDateValue: string, startingPosition: number, endingPosition: number, section: string, char: string) => {
