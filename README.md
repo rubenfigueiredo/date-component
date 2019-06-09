@@ -2,6 +2,10 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Available Scripts
 
+Datepicker that allows you to write dates with the desktop keyboard from beginning to end. Improvement on present datepicker libraries desktop functionality 
+
+## Available Scripts
+
 In the project directory, you can run:
 
 ### `npm start`
